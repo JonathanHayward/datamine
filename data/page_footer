@@ -1,5 +1,18 @@
-                </td>
-            </tr>
-        </table>
+        <script language="JavaScript" type="text/javascript">
+        <!--
+            function collapse_document(identifier)
+                {
+                $('.additional.' + identifier).hide();
+                $('.collapse.' + identifier).hide();
+                $('.showall.' + identifier).show();
+                }
+            function expand_document(identifier)
+                {
+                $('.additional.' + identifier).show();
+                $('.collapse.' + identifier).show();
+                $('.showall.' + identifier).hide();
+                }
+        // -->
+        </script>
     </body>
 </html>

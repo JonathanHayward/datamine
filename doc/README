@@ -1,4 +1,4 @@
-README for the Data Mine
+README for the Magic Notebook 1.2.1
 
 LEGAL
 
@@ -11,10 +11,9 @@ LEGAL
 
         This software is copyright 2003 by Jonathan Hayward, and licensed
 		and licensed to you under the your choice of the original Artistic
-        License, which should be present in the file doc/artistic.txt, the
+        License, which should be present in the file doc/artistic.txt, and the
         General Public License version 2.0, which should be present in the
-        file doc/gpl.txt, and the Massachusetts Institute of Technology
-        License, which should be present in the file doc/mit.txt.
+        file doc/gpl.txt.
 
     Warrantee
 
@@ -80,10 +79,16 @@ USAGE
 
         http://[your hostname]/cgi-bin/datamine
 
-    (That is the location provided by RPM installation and the default for the
-    provided installer. The provided installer allows you to specify another
-    location; if you specified another location, substitute that for
-    "/cgi-bin/furball".)
+    (That is the default for the provided installer. The provided installer
+    allows you to specify another location; if you specified another location,
+    substitute that for "/cgi-bin/datamine".)
+
+    You can run administrative controls by adding to this base URL:
+
+        ?page_mode=administrative_control
+
+    You will be prompted for a password as stored at a particular filesystem
+    path.
 
 NOTES
 

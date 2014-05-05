@@ -170,6 +170,10 @@ available in the README file.
 ***     """ + server_executable_path + """
 ***
 *** At present, the server has not been started.
+***
+*** To configure the server, append the following to the URL:
+*** 
+***     ?page_mode=administrative_control
 
 Thank you for using the Data Mine!
 

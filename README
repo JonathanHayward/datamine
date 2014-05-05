@@ -1,1 +1,110 @@
-doc/README
+README for the Magic Notebook 1.2.1
+
+LEGAL
+
+    For the duration of this copyright statement, 'this software' and
+    'The Data Mine' are taken to mean all original files distributed with
+    this product, and the arrangement and other original work related to this
+    product.
+
+    License
+
+        This software is copyright 2003 by Jonathan Hayward, and licensed
+		and licensed to you under the your choice of the original Artistic
+        License, which should be present in the file doc/artistic.txt, and the
+        General Public License version 2.0, which should be present in the
+        file doc/gpl.txt.
+
+    Warrantee
+
+        Jonathan Hayward makes no warranties, express or implied,
+        regarding this software.  In no event shall Jonathan Hayward be
+        liable for any consequential, special, incidental, or indirect
+        damages of any kind arising out of the license of, use of,
+        or inability to use any software or product covered under
+        this license, even if Jonathan Hayward has been advised of the
+        possibility of such damages.  This limitation of liability and
+        risks is reflected in the price of this software.
+
+PURPOSE
+
+    The Data Mine is a search engine meant to provide high-usability and
+    powerful access to documents being searched. It does not search the web,
+    but local files provided to it. It is meant to help the user find materials
+    quickly.
+
+INSTALLATION AND SETUP
+
+    Basics
+
+        * To install, run "./install" and answer the questions provided.  This
+          will run a Unix-flavor install-style script and should create a
+          working, out-of-the-box installation when supplied appropriate
+          values.
+
+        * See USAGE below if are curions about how to use the Data Mine.
+
+        Setup and Customization
+
+            The Configure link at the bottom of the Data Mine search page
+            provides a menu you can use to customize the data mine.
+
+            The main engine is intended for anyone to be able to use; the setup
+            pages are written for techies. If you aren't sure what a regular
+            expression is, for instance, ask someone who's more technical.
+
+        Security
+
+            The present release of the Data Mine has not been closely
+            scrutinized for security, and should be treated as such by
+            security-conscious administrators.  If you discover a
+            vulnerability, please contact the author at
+            jonathan.hayward@pobox.com with details.
+
+            You are strongly encouraged to change the password in
+            /usr/share/datamine/password.
+
+            The default installation sets
+            /usr/share/datamine and contents
+            to a relatively permissive mode.  Administrators are encouraged to
+            set directory and contents to mode 700, owned by the
+            effective user ID that CGI scripts will be running under. This
+            is usually apache or nobody.
+
+USAGE
+
+    The Data Mine is designed to be run as a straightforward web
+    application, with much administrative activity performed on-web.
+    Once it is set up via the Configure link, just explore.
+
+        http://[your hostname]/cgi-bin/datamine
+
+    (That is the default for the provided installer. The provided installer
+    allows you to specify another location; if you specified another location,
+    substitute that for "/cgi-bin/datamine".)
+
+    You can run administrative controls by adding to this base URL:
+
+        ?page_mode=administrative_control
+
+    You will be prompted for a password as stored at a particular filesystem
+    path.
+
+NOTES
+
+    Payment
+
+        The Data Mine is linkware. It is available to you free of charge.
+        If you like it, I would be very happy if you would visit
+        http://JonathansCorner.com and consider linking to it.
+
+    Bugs
+
+        For security-related concerns, see Security above.
+
+    Contact
+
+        The author can be contacted at jonathan.hayward@pobox.com, and
+        maintains a website at http://JonathansCorner.com. The current version
+        of the Data Mine may be obtained from
+        http://JonathansCorner.com/etc/datamine/.

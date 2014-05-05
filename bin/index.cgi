@@ -11,21 +11,22 @@ import random
 import socket
 import sys
 
-#
-# For load balancing and transparent failover, specify multiple servers and/or ports on
-# the same server.
-#
-# The server takes a single optional argument specifying which port number to listen to, so
-# the default port of 1059 can be overridden by the server by invoking it on the command
-# line with another port as its argument.
-#
-# On the CGI script client side, this list tells what server/port or pool of servers and
-# ports to try.
-#
+DEFAULT_PORT = 1358
 
 servers = [
-  ("127.0.0.1", 1059),
-  #("127.0.0.1", 1060,),
+  ("127.0.0.1",),
+  ("127.0.0.1", 1054,),
+  ("127.0.0.1", 1055,),
+  ("127.0.0.1", 1056,),
+  ("127.0.0.1", 1057,),
+  #("10.0.0.1",),
+  #("10.0.0.64",),
+  #("10.0.0.64", 1054,),
+  #("10.0.1.4",),
+  #("10.0.1.4", 1054,),
+  #("10.0.1.4", 1055,),
+  #("10.0.1.4", 1056,),
+  #("10.0.6.8",),
   ]
 
 def get_page_from_oracle():
@@ -51,20 +52,17 @@ def get_page_from_oracle():
             sockIn.close()
             sockOut.close()
             return result
-        except Exception, saved_exception:
+        except:
             pass
     return """Content-type: text/html
 
 <html>
     <head>
-        <title>The Data Mine</title>
-        <style>
-            <!--
-            a { text-decoration: none }
-            -->
-        </style>
+        <meta http-equiv="Refresh" value="60">
+        <title>Orthodox Church Fathers (Down)</title>
+        <link rel="stylesheet" href="/fathers/fathers.css">
     </head>
-    <body bgcolor="#ffffff" link="#7080e0" vlink="#a870c0" alink="#c09090" text="#404040">
+    <body>
         <table border="0" width="100%">
             <tr>
                 <td width="100%" height="15">
@@ -73,12 +71,19 @@ def get_page_from_oracle():
             <tr>
                 <td>
                     <h1 id="title"
-                    style="text-align: center; margin-top: 0px">The Data
-                    Mine</h1>
+                    style="text-align: center; margin-top: 0px">Orthodox Church
+                    Fathers (presently down)</h1>
 
-                    <p>We're sorry, but this data mine isn't available now. You
-                    might try contacting the site administrator.</p>
-<!-- Error: """ + str(saved_exception) + """ -->\n
+                    <p>We're sorry, but this searchable Fathers archive isn't
+                    available now. You can still <a
+                    href="/fathers/"><strong>browse the
+                    Orthodox Church Fathers archive</strong> (<em>Ante-Nicene
+                    Fathers</em>, and <em>Nicene and Post-Nicene Fathers</em>:
+                    both Series I and Series II).</a></p>
+                    
+                    <p>(If you need to, you can <a
+                    href="http://JonathansCorner.com/contact/">contact the
+                    administrator</a>.)</p>
                 </td>
             </tr>
         </table>
