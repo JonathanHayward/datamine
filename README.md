@@ -1,4 +1,0 @@
-datamine
-========
-
-The Data Mine

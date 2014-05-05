@@ -1,0 +1,57 @@
+#!FULL_PYTHON_PATH
+
+"""A search engine originally intended to allow searching of the Christian
+Classics Ethereal Library Nicene and Post-Nicene Fathers' collection and be
+flexible enough to be modifiable to other use.""" 
+
+import cgi, cPickle, os, socket, sys
+
+def get_page_from_oracle():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect(("127.0.0.1", 1374))
+        sockIn = sock.makefile("rb")
+        sockOut = sock.makefile("wb")
+        cPickle.dump((os.environ, cgi.FieldStorage()), sockOut)
+        sockOut.flush()
+        result = cPickle.load(sockIn)
+        sock.close()
+        sockIn.close()
+        sockOut.close()
+        return result
+    except socket.error, e:
+        return """Content-type: text/html
+
+<html>
+    <head>
+        <title>The Data Mine</title>
+        <style>
+            <!--
+            a { text-decoration: none }
+            -->
+        </style>
+    </head>
+    <body bgcolor="#ffffff" link="#7080e0" vlink="#a870c0" alink="#c09090" text="#404040">
+        <table border="0" width="100%">
+            <tr>
+                <td width="100%" height="15">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h1 id="title"
+                    style="text-align: center; margin-top: 0px">The Data
+                    Mine</h1>
+
+                    <p>We're sorry, but this data mine isn't available now. You
+                    might try contacting the site administrator.</p>
+<!-- Error: """ + str(e) + """ -->\n
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+"""
+
+if __name__ == "__main__":
+    sys.stdout.write(get_page_from_oracle())

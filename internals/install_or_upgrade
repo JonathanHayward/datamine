@@ -1,0 +1,423 @@
+#!/usr/bin/python
+"""Install/upgrade script for the Data Mine ( homepage at
+http://jonathanscorner.com/etc/datamine/ ). This script runs in a text window
+rather than a popup wizard. Some of the comments say "install" where you should
+read "install or upgrade"."""
+
+import os, string, sys
+
+def add_trailing_slash(path):
+    """If a pathname (for a directory) lacks a trailing slash, add one."""
+    if len(path) > 0:
+        if path[len(path) - 1] == "/":
+            return path
+        else:
+            return path + "/"
+    else:
+        return path + "/"
+
+def begins_with_tilde(path):
+    """Determine if a pathname begins with a tilde."""
+    if path[0] == "~":
+        return 1
+    else:
+        return 0
+
+def get_script_mode():
+    return sys.argv[1].lower()
+
+def get_value(default):
+    """In an install question, tell what the default answer will be, and read
+    user input. Return the default if the user just hits the enter key, or the
+    user response if the user types anything different."""
+    output(" [" + default + "]: ")
+    response = read_chomped_line()
+    if response == "":
+        return default
+    else:
+        return response
+
+def init():
+    """Perform all necessary initializations, including outputting initial
+    instructions to the user."""
+    global action_url
+    global cgi_executable_path
+    global document_url
+    global documentation_path
+    global full_python_path
+    global has_installation_been_customized
+    global html_root_directory
+    global private_data_directory
+    global server_executable_path
+    global should_replace_configuration_file
+    global should_replace_page_beginning_and_ending
+    global should_replace_game_data
+    global should_replace_pictures
+    action_url = "/cgi-bin/datamine"
+    cgi_executable_path = "/var/www/cgi-bin/datamine"
+    document_url = "/datamine/"
+    documentation_path = "/usr/doc/datamine/"
+    full_python_path = "/usr/bin/python"
+    has_installation_been_customized = "no"
+    html_root_directory = "/var/www/html/datamine/"
+    private_data_directory = "/usr/share/datamine/"
+    server_executable_path = "/usr/share/datamine/bin/datamined"
+    should_replace_configuration_file = "yes"
+    should_replace_game_data = "yes"
+    should_replace_page_beginning_and_ending = "yes"
+    should_replace_pictures = "yes"
+    output(\
+"""
+You are beginning the Data Mine """ + get_script_mode().upper() + \
+""" script. This script will ask you
+a few questions in order to help customize the script and place associated
+files in the right places. If you don't know an appropriate answer to one of
+the questions, and don't want to use this script's guess, you can quit at any
+time and restart the script when you know how to answer the questions. The
+script will ask you all informational questions before making any changes.
+
+Questions asked are typical of a traditional Unix/Linux interactive
+install-style script. The person using the script is encouraged to have at
+least two windows open: one for this script, and one to poke around on the
+system and find appropriate answers to script questions. The default answers
+are acceptable under RedHat Linux.
+
+(This script accepts the "~" and "~user" abbreviations for home directories. If
+you are giving part of a URL, please specify "~user/" instead of "~/".)
+
+Hit return to continue: """)
+    read_chomped_line()
+
+def install_or_upgrade():
+    """Install materials to the secified locations and perform necessary
+    setup."""
+    global action_url
+    global cgi_executable_path
+    global document_url
+    global documentation_path
+    global full_python_path
+    global html_root_directory
+    global private_data_directory
+    global server_executable_path
+    if get_script_mode() == "install":
+        output("\nInstalling...")
+    elif get_script_mode == "upgrade":
+        output("\nUpgrading...")
+    if get_script_mode() == "install":
+        os.system("rm -rf " + private_data_directory)
+        os.system("mkdir -p " + private_data_directory)
+        os.system("rm -rf " + private_data_directory)
+        os.system("cp -r data " + private_data_directory)
+        os.system("chmod 644 " + private_data_directory + "/*")
+        os.system("chmod 733 " + private_data_directory + "/pickled")
+        os.system("chmod 777 " + private_data_directory + "/pickled/*")
+        os.system("chmod 711 " + private_data_directory)
+        os.system("rm -rf " + html_root_directory)
+        os.system("mkdir -p " + html_root_directory)
+        os.system("rm -rf " + html_root_directory)
+        os.system("cp -r html " + html_root_directory)
+        os.system("chmod 755 " + html_root_directory)
+        os.system("chmod 644 " + html_root_directory + "/*")
+    os.system("rm -rf " + cgi_executable_path)
+    os.system("mkdir -p " + cgi_executable_path)
+    os.system("rm -rf " + cgi_executable_path)
+    os.system("cp bin/client " + cgi_executable_path)
+    os.system("rm -rf " + server_executable_path)
+    os.system("mkdir -p " + server_executable_path)
+    os.system("rm -rf " + server_executable_path)
+    os.system("cp bin/server " + server_executable_path)
+    substitute(cgi_executable_path, "FULL_PYTHON_PATH", full_python_path)
+    substitute(server_executable_path, "FULL_PYTHON_PATH", full_python_path)
+    substitute(server_executable_path, "DOCUMENT_ROOT_PATH", \
+      private_data_directory)
+    substitute(server_executable_path, "DOCUMENT_URL", document_url)
+    substitute(server_executable_path, "/cgi-bin/datamine", action_url)
+    try:
+        import threading
+    except:
+        substitute(server_executable_path, "SHOULD_THREAD = 1", \
+          "SHOULD_THREAD = 0")
+    try:
+        for x in {}:
+            pass
+    except:
+        substitute(server_executable_path, \
+          "CAN_SEQUENCE_OVER_DICTIONARIES = 1", \
+          "CAN_SEQUENCE_OVER_DICTIONARIES = 0")
+    os.system("chmod 0755 " + cgi_executable_path)
+    os.system("chown nobody " + server_executable_path)
+    os.system("chmod 4755 " + server_executable_path)
+    substitute("doc/README", "<the private Data Mine data directory>", \
+      private_data_directory)
+    substitute("doc/README", "<the public Data Mine HTML directory>", \
+      html_root_directory)
+    os.system("mkdir -p " + documentation_path)
+    os.system("rm -rf " + documentation_path)
+    os.system("mkdir -p " + documentation_path)
+    os.system("cd doc; cp -rp * " + documentation_path)
+    if get_script_mode() == "install":
+        output(\
+"""
+
+Installation is complete. Further information about the Data Mine is
+available in the README file.
+
+*** Note: You will need to start the server yourself, either by putting a line
+*** in an rc.local file, or by crontab, or manual invocation. The server is
+*** at:
+***
+***     """ + server_executable_path + """
+***
+*** At present, the server has not been started.
+
+Thank you for using the Data Mine!
+
+""")
+    if get_script_mode() == "upgrade":
+        output(\
+"""
+
+The upgrade is complete. Further information about the Data Mine is
+available in the README file.
+
+Thank you for using the Data Mine!
+
+""")
+
+def interview():
+    """Interview the player for information needed to complete the install."""
+    global action_url
+    global cgi_executable_path
+    global document_url
+    global documentation_path
+    global full_python_path
+    global has_installation_been_customized
+    global html_root_directory
+    global private_data_directory
+    global server_executable_path
+    global should_replace_configuration_file
+    global should_replace_game_data
+    global should_replace_page_beginning_and_ending
+    global should_replace_pictures
+    output(\
+"""
+What is the URL for the Data Mine, exclusive of hostname? This should be
+something like "/cgi-bin/datamine" or "/~user/datamine.cgi". (All examples
+given should be typed without quotes).
+
+Data Mine URL""")
+    action_url = get_value(action_url)
+    output(\
+"""
+What is the physical path on your system for the Data Mine client, so that it
+can be be accessible from that URL? This should be something like
+"/var/www/cgi-bin/datamine" or "~/public_html/datamine.cgi".
+
+Data Mine client executable path""")
+    cgi_executable_path = get_value(cgi_executable_path)
+    output(\
+"""
+What is the physical path on your system for the Data Mine server you start for
+the Data Mine to work?  This should be something like
+"/usr/share/datamine/bin/datamined" or "~/bin/datamined".
+
+Data Mine executable path""")
+    server_executable_path = get_value(server_executable_path)
+    output(\
+"""
+What is the path on the system for the Data Mine documentation? This should
+be something like "/usr/doc/datamine/" or "~/doc/datamine".
+
+Documentation path""")
+    documentation_path = get_value(documentation_path)
+    output(\
+"""
+What is the URL for the Data Mine documents (images, etc.)? This should be
+something like "/datamine/" or "/~user/datamine/".
+
+Document URL""")
+    document_url = get_value(document_url)
+    output(\
+"""
+What is the full path to python? This should be something like
+"/usr/bin/python".
+
+Full python path""")
+    full_python_path = get_value(full_python_path)
+    output(\
+"""
+What is the full system path for material to be so as to be available at the
+URL you specified for the document URL? This should be something like
+"/var/www/html/datamine/" or "~/public_html/datamine/".  
+""")
+    if get_script_mode() == "install":
+        output("""
+** Warning: If you have anything at this location before the Data Mine is
+** installed, it will be deleted.
+""")
+    output("""
+HTML root directory""")
+    html_root_directory = get_value(html_root_directory)
+    output(\
+"""
+What is the directory that private data should be stored in? This should be
+something like "/usr/share/datamine/" or "~/datamine/".
+""")
+    if get_script_mode() == "install":
+        output("""
+** Warning: If you have anything at this location before the Data Mine is
+** installed, it will be deleted.
+""")
+    output("""
+Private data directory""")
+    private_data_directory = get_value(private_data_directory)
+    if get_script_mode() == "upgrade":
+        output(\
+"""
+Have you customized your Data Mine script after installation and any
+upgrades (yes/no)""")
+        has_installation_been_customized =\
+          get_value(has_installation_been_customized)
+        if is_true(has_installation_been_customized):
+            pass
+    output(\
+"""
+You have selected the following options:
+
+    Data Mine URL: """ + action_url + """
+    Data Mine CGI executable path: """ + cgi_executable_path + """
+    Data Mine server executable path: """ + server_executable_path + """
+    Documentation path: """ + documentation_path + """
+    Document URL: """ + document_url + """
+    Full Python path: """ + full_python_path + """
+    HTML root directory: """ + html_root_directory + """
+    Private data directory: """ + private_data_directory)
+    if get_script_mode() == "upgrade":
+        output(\
+"""
+
+    Has installation been customized: """ + has_installation_been_customized)
+        if is_true(has_installation_been_customized):
+            pass
+    output(\
+"""
+
+Are all these options correct (yes/no)""")
+    if is_true(get_value("yes")):
+        return 1
+    else:
+        output(\
+"""
+Would you rather change your answers or quit for now (change/quit)""")
+        response = get_value("change")
+        if response.lower()[0] == "c":
+            output(\
+"""
+I'll ask you the same questions again. If you want to keep your answer the
+same, just hit enter.
+""")
+            return interview()
+        else:
+            output(\
+"""
+Bye! You can always install the Data Mine at a later time.
+""")
+            sys.exit(0)
+
+def is_true(option_value):
+    """Test whether a supplied string should be interpreted as true. This will
+    happen if the value, converted to lowercase, is "true", "yes", "on", or
+    "1"."""
+    if option_value.lower() == "true":
+        return 1
+    elif option_value.lower() == "yes":
+        return 1
+    elif option_value.lower() == "on":
+        return 1
+    elif option_value.lower() == "1":
+        return 1
+    else:
+        return 0
+
+def output(text):
+    """Output a given piece of text. This does not append a newline."""
+    sys.stdout.write(text)
+
+def prefix_tilde_with_slash(path):
+    """If a specifed path begins with a tilde, place a slash before that
+    tilde."""
+    if begins_with_tilde(path):
+        return "/" + path
+    else:
+        return path
+
+def read_chomped_line():
+    """Read a line from standard input, minus an ending linefeed or carriage
+    return-linefeed pair."""
+    current_character = ""
+    result = ""
+    while current_character != "\n":
+        result += current_character
+        current_character = sys.stdin.read(1)
+        if current_character == "\r":
+            current_character = sys.stdin.read(1)
+    return result
+
+def remove_trailing_slash(path):
+    """If a specified path ends in a trailing slash, remove it."""
+    if len(path) > 0:
+        if path[len(path) - 1] == "/":
+            return path[0:-1]
+        else:
+            return path
+    else:
+        return path
+
+def standardize_responses():
+    """Take user responses and standardize them in terms of appropriately
+    adding/removing a trailing slash, expanding tildes, etc."""
+    global action_url
+    global cgi_executable_path
+    global server_executable_path
+    global document_url
+    global documentation_path
+    global full_python_path
+    global html_root_directory
+    global private_data_directory
+    action_url = remove_trailing_slash(action_url)
+    action_url = prefix_tilde_with_slash(action_url)
+    cgi_executable_path = os.path.expanduser(cgi_executable_path)
+    cgi_executable_path = remove_trailing_slash(cgi_executable_path)
+    server_executable_path = os.path.expanduser(server_executable_path)
+    server_executable_path = remove_trailing_slash(server_executable_path)
+    documentation_path = os.path.expanduser(documentation_path)
+    documentation_path = remove_trailing_slash(documentation_path)
+    document_url = remove_trailing_slash(document_url)
+    full_python_path = os.path.expanduser(full_python_path)
+    full_python_path = remove_trailing_slash(full_python_path)
+    html_root_directory = remove_trailing_slash(html_root_directory)
+    html_root_directory = os.path.expanduser(html_root_directory)
+    private_data_directory = remove_trailing_slash(private_data_directory)
+    private_data_directory = os.path.expanduser(private_data_directory)
+
+def substitute(filename, key, value):
+    """Substitute, in the file of specified filename, all instances of a given
+    key with the specified value."""
+    try:
+        unmodified_file = open(filename, "r")
+        initial_text = unmodified_file.read()
+        unmodified_file.close()
+        modified_text = string.replace(initial_text, key, value)
+        modified_file = open(filename, "w")
+        modified_file.write(modified_text)
+        modified_file.close()
+    except IOError:
+        output("Could not substitute \"" + value + "\" for \"" + key + \
+          "\" in file \"" + filename + "\".\nExiting... (Sorry!)\n")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    init()
+    interview()
+    standardize_responses()
+    install_or_upgrade()

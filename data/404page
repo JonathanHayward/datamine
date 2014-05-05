@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <title>Sorry...</title>
+        <style>
+            a { text-decoration: none }
+        </style>
+    </head>
+    <body bgcolor="white"
+      link="#2040B0" vlink="A040B0" alink="#B04040" text="#808080">
+        <table border="0" width="100%">
+            <tr>
+                <td width="100%" height="15">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h1 id="title"
+                    style="text-align: center; margin-top: 0px">Sorry...</h1>
+
+                    <p>Sorry; we couldn't locate the page you requested. Please
+                    hit 'Back' and click on another link...</p>
+
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
