@@ -49,15 +49,27 @@ class boolean_parser:
             self.parsed_query = self.parse_query()
         else:
             self.parsed_query = parsed_query
-            if self.parsed_query == []:
-                debug_log("Empty query encountered.")
         self.use_parsed_query()
     def bad_query(self):
-        debug_log("Bad query encountered.")
         pass
+    def get_words(self):
+        if self.type == "and":
+            result = self.left_child.get_words() + self.right_child.get_words()
+        if self.type == "not":
+            result = self.child.get_words()
+        if self.type == "or":
+            result = self.left_child.get_words() + self.right_child.get_words()
+        if self.type == "parenthesized":
+            result = self.child.get_words()
+        if self.type == "undefined":
+            result = [] 
+        if self.type == "word":
+            result = self.words[:]
+        return sort_by_descending_length(result)
     def parse_query(self):
         current_segment = ""
         in_word = 0
+        in_re = 0
         last_segment = None
         parenthesis_depth = 0
         tokenized_query = []
@@ -76,6 +88,12 @@ class boolean_parser:
                 if parenthesis_depth == 0:
                     tokenized_query.append((current_segment, "parenthesized"))
                 current_segment = ""
+            elif self.query[index] == "*":
+                if not in_word and parenthesis_depth == 0:
+                    current_segment = ""
+                in_word = 1
+                current_segment += "."
+                in_re = 1
             elif re.match("\W", self.query[index]):
                 if in_word and parenthesis_depth == 0:
                     if string.lower(current_segment) == "or":
@@ -83,13 +101,17 @@ class boolean_parser:
                     elif string.lower(current_segment) == "and":
                         tokenized_query.append((None, "and"))
                     elif string.lower(current_segment) == "not":
+                        if len(tokenized_query) > 0 and \
+                          tokenized_query[len(tokenized_query) - 1][1] == \
+                          "word":
+                            tokenized_query.append((None, "and"))
                         tokenized_query.append((None, "not"))
                     else:
                         if len(tokenized_query) > 0 and \
                           tokenized_query[len(tokenized_query) - 1][1] == \
                           "word":
                             tokenized_query.append((None, "and"))
-                        tokenized_query.append((current_segment, "word"))
+                        tokenized_query.append(((string.lower(current_segment), in_re), "word"))
                 in_word = 0
             elif re.match("\w", self.query[index]):
                 if not in_word and parenthesis_depth == 0:
@@ -109,18 +131,16 @@ class boolean_parser:
                   tokenized_query[len(tokenized_query) - 1][1] == \
                   "word":
                     tokenized_query.append((None, "and"))
-                tokenized_query.append((string.lower(current_segment), "word"))
+                tokenized_query.append(((string.lower(current_segment), in_re), "word"))
         return tokenized_query
     def use_parsed_query(self):
-        #print(str(self.parsed_query))
         for index in range(len(self.parsed_query)):
             type = self.parsed_query[index][1]
             if type == "or":
                 if index == 0 or index == len(self.parsed_query):
                     self.bad_query()
                 self.type = "or"
-                #print(self.parsed_query[:index])
-                #print(self.parsed_query[index + 1:])
+                print(self.parsed_query[index + 1:])
                 self.left_child = boolean_parser(self.get_word_score, \
                   self.parsed_query[:index], "")
                 self.right_child = boolean_parser(self.get_word_score, \
@@ -144,16 +164,24 @@ class boolean_parser:
                     self.bad_query()
                 self.type = "not"
                 self.child = boolean_parser(self.get_word_score, \
-                  self.parsed_query[index + 1], "")
+                  self.parsed_query[index + 1:], "")
                 return
         if len(self.parsed_query) > 0:
-            if self.parsed_query[0][1] == "parenthesised":
-                self.type = "parenthesised"
-                self.child = boolean_parser(self.parsed_query[0][0])
+            if self.parsed_query[0][1] == "parenthesized":
+                self.type = "parenthesized"
+                self.child = factory.get_boolean_parser(self.get_word_score, self.parsed_query[0][0])
                 return
             if self.parsed_query[0][1] == "word":
                 self.type = "word"
-                self.word = word_numberer.get_number(self.parsed_query[0][0])
+                self.word = self.parsed_query[0][0][0]
+                self.is_re = self.parsed_query[0][0][1]
+                if self.is_re:
+                    self.words = word_numberer.get_matching_words(self.word)
+                else:
+                    self.words = [self.word]
+                self.numbered_words = []
+                for word in self.words:
+                    self.numbered_words.append(word_numberer.get_number(word))
     def get_score(self, document):
         if self.type == "and":
             return min(self.left_child.get_score(document),
@@ -166,12 +194,15 @@ class boolean_parser:
         if self.type == "or":
             return max(self.left_child.get_score(document),
               self.right_child.get_score(document))
-        if self.type == "parenthesised":
+        if self.type == "parenthesized":
             return self.child.get_score(document)
         if self.type == "undefined":
             return 1
         if self.type == "word":
-            return self.get_word_score(document, self.word)
+            result = 0
+            for word in self.numbered_words:
+                result += self.get_word_score(document, word)
+            return result
 
 class cache_class(ancestor):
     def __init__(self):
@@ -282,7 +313,8 @@ class cache_class(ancestor):
             timestamps = self.hashes[hash_name]["timestamps"]
             results = self.hashes[hash_name]["results"]
             for key in sequence(results):
-                if timestamps[key] < earliest_timestamp:
+                if timestamps.has_key(key) and timestamps[key] < \
+                  earliest_timestamp:
                     to_delete.append((hash_name, key))
         for current in sequence(to_delete):
             del self.hashes[current[0]]["timestamps"][current[1]]
@@ -334,15 +366,15 @@ class configuration_class(ancestor):
     def get_control_popup_width(self):
         return 800
     def get_debug_level(self):
-        return 0
+        return 5
     def get_default_style(self, color = "#808080", should_color = 1):
         if should_color:
             return "color: " + color
         else:
             return ""
     def get_delay_between_monolith_saves(self):
-        #return 300
-        return 1
+        return 3600
+        #return 1
     def get_displayable_frames_list(self):
         result = []
         for current_frame in sequence(self.get_frames_list()):
@@ -581,7 +613,7 @@ class configuration_class(ancestor):
         if hasattr(self, "show_all_quotes_by_default"):
             return self.show_all_quotes_by_default
         else:
-            return 0
+            return 1
     def should_use_oracle(self):
         return self.get_program_mode() == "oracle"
 
@@ -607,6 +639,8 @@ class document(ancestor):
         self.title = self.filename
     def forget_file_contents(self):
         self.file_contents = None
+    def get_all_tokens(self):
+        return self.get_tokens()
     def get_body_tokens(self):
         return self.get_tokens()
     def get_displayable_result(self):
@@ -702,7 +736,7 @@ class document(ancestor):
                       excerpt_radius]))
         return result
     def get_filename(self):
-        return filename
+        return self.filename
     def get_file_contents(self):
         if self.file_contents != None:
             return self.file_contents
@@ -950,14 +984,21 @@ class folder_tab(ancestor):
         result.append("<input type=\"hidden\" " + \
           "name=\"control_actions_selected_action\" " + \
           "value=\"none\">")
-        result.append("<p><a style=\"" + configuration.get_control_link_style() + "\" " + \
-          "href=\"JavaScript:perform_action('reread_documents')\">Reread " + \
-          "Documents Being Searched</a></p>")
-        if not SHOULD_THREAD or configuration.should_save_cache():
-            result.append("<p><a style=\"" + configuration.get_control_link_style() + \
-              "\" " + \
-              "href=\"JavaScript:perform_action('save_cache')\">Save " + \
-              "Cached Data</a></p>")
+        if configuration.should_save_cache():
+            result.append("<p><a style=\"" + \
+              configuration.get_control_link_style() + "\" " + \
+              "href=\"JavaScript:perform_action('reread_documents')\">Reread "\
+              + "Documents Being Searched and Save Cached Data</a></p>")
+        else:
+            result.append("<p><a style=\"" + \
+              configuration.get_control_link_style() + "\" " + \
+              "href=\"JavaScript:perform_action('reread_documents')\">Reread "\
+              + "Documents Being Searched</a></p>")
+        #if not SHOULD_THREAD or configuration.should_save_cache():
+            #result.append("<p><a style=\"" + configuration.get_control_link_style() + \
+              #"\" " + \
+              #"href=\"JavaScript:perform_action('save_cache')\">Save " + \
+              #"Cached Data</a></p>")
         #result.append("<p><a style=\"" + configuration.get_control_link_style() + "\" " + \
           #"href=\"JavaScript:perform_action('shut_down_server')\">Shut " + \
           #"Down Data Mine Server</a></p>")
@@ -1422,11 +1463,11 @@ class frame_control(frame):
             for section in sections.values():
                 if SHOULD_THREAD:
                     thread = factory.get_thread(None, \
-                      section.get_documents, \
-                      None, [1], {})
+                      reread_documents_and_save_cache, \
+                      None, [], {})
                     thread.start()
                 else:
-                    section.get_documents(1)
+                    reread_documents_and_save_cache()
         elif action == "save_cache":
             save_object(monolith, "cache")
         elif action == "shut_down_server":
@@ -2084,7 +2125,7 @@ class language(ancestor):
         result = []
         affixes_as_text = re.sub("-", "", affixes_from_textarea)
         affixes_as_strings = re.split("[\r\n]+", affixes_as_text)
-        affixes_as_strings = self.sort_by_descending_length(affixes_as_strings)
+        affixes_as_strings = sort_by_descending_length(affixes_as_strings)
         for affix in sequence(affixes_as_text):
             if affix != "":
                 if affix_type == "prefix":
@@ -2121,9 +2162,6 @@ class language(ancestor):
         return self.collapse_case
     def should_collapse_duplicate_letters(self):
         return self.collapse_duplicate_letters
-    def sort_by_descending_length(self, affixes):
-        return affixes
-        ##
     def tokenize(text):
         # Is not yet modified to deal with HTML words, which may contain the
         # characters "&#;".
@@ -2266,6 +2304,7 @@ class query(ancestor):
             self.search_criteria = search_criteria
         self.boolean_parser = factory.get_boolean_parser(self.score_internal,
           query_string)
+        self.words = self.boolean_parser.get_words()
     def accepts(self, document_for_file, query_string):
         if self.score(document_for_file, query_string) > 0:
             return 1
@@ -2379,6 +2418,8 @@ class query(ancestor):
             return "<span style=\"" + style + "\">" + word + "</span>"
         else:
             return word
+    def get_words(self):
+        return self.words
     def is_approximate_match(self, language_identifier, word):
         return self.get_score_for_word(language_identifier, word) >= \
           configuration.get_approximate_match_threshold()
@@ -2386,9 +2427,7 @@ class query(ancestor):
         return self.get_score_for_word(language_identifier, word) >= \
           configuration.get_approximate_match_threshold()
     def score(self, document_for_file, query_string):
-        score = factory.get_boolean_parser(self.score_internal, \
-          self.query_string).get_score(document_for_file)
-        return score
+        return self.boolean_parser.get_score(document_for_file)
     def score_internal(self, document_for_file, query_word):
         proportions = {}
         total_score = 1
@@ -2448,7 +2487,9 @@ class search(ancestor):
         #else:
         sections_to_search = self.sections_of_documents
         for current_section in sequence(sections_to_search):
-            for document in sequence(current_section.get_documents()):
+            for filename in \
+              sequence(current_section.get_documents_by_filename()):
+                document = current_section.get_document(filename)
                 should_include_document = 1
                 if restricted_section != None:
                     should_include_document = \
@@ -2515,7 +2556,9 @@ class search_more_like_this(search):
             restricted_section = None
         documents_found = {}
         for current_section in sequence(self.sections_of_documents):
-            for document in sequence(current_section.get_documents()):
+            for filename in \
+              sequence(current_section.get_documents_by_filename()):
+                document = current_section[filename]
                 if restricted_section == None or \
                   restricted_section.accepts(current_section.get_root(), \
                   document.get_relative_filename()):
@@ -2560,7 +2603,7 @@ class section(ancestor):
     def get_default_name(self):
         return self.default_name
     def get_document(self, relative_filename):
-        if relative_filename in sequence(self.documents_by_filename.keys()):
+        if relative_filename in sequence(self.documents_by_filename):
             return self.documents_by_filename[relative_filename]
         elif self.accepts(self.root, relative_filename):
             return factory.get_document(self.root + relative_filename,\
@@ -2573,6 +2616,9 @@ class section(ancestor):
               self.possibly_include_files_from_directory, "")
             self.should_save = 1
         return self.documents
+    def get_documents_by_filename(self):
+        self.get_documents()
+        return self.documents_by_filename
     def get_html_name(self):
         return self.html_name
     def get_index(self):
@@ -2758,6 +2804,10 @@ class user_configuration_class(ancestor):
 class webpage(document):
     def __init__(self, filename, section):
         document.__init__(self, filename, section)
+    def get_all_tokens(self):
+        title_tokens = self.tokenize(self.compute_title())
+        body_tokens = self.get_body_tokens()
+        return title_tokens + body_tokens
     def get_body_tokens(self):
         working_text = self.get_file_contents()
         for tag in ["title", "script", "style"]:
@@ -2770,11 +2820,7 @@ class webpage(document):
         interim = self.get_file_contents()
         newline_placeholder = "@@NEWLINE_PLACEHOLDER_45434343929432@@"
         interim = re.sub("\n", newline_placeholder, interim)
-        query = string.lower(get_cgi("query"))
-        query_words = re.split(r"\W+", query)
-        for logical in ["and", "not", "or"]:
-            while logical in sequence(query_words):
-                query_words.remove(logical)
+        query_words = factory.get_query(get_cgi("query")).get_words()
         #word_characters = r"\w&#;"
         word_characters = r"\w"
         word_character_matcher = re.compile("[" + word_characters + "]")
@@ -2916,6 +2962,13 @@ class word_numberer_class(ancestor):
         ancestor.__init__(self)
         self.words = {}
         self.highest_index = 0
+    def get_matching_words(self, regexp):
+        result = []
+        compiled = re.compile("\A" + regexp + "\Z")
+        for word in sequence(self.words):
+            if compiled.match(word):
+                result.append(word)
+        return result
     def get_number(self, word):
         if word in sequence(self.words):
             return self.words[word]
@@ -3017,7 +3070,7 @@ def build_output_for_appropriate_search_results():
                   get_cgi("display_only_section", \
                   "/") and result[1].get_relative_filename() == \
                   get_cgi("display_only_filename"):
-                    build_output_for_search_result(result)
+                    build_output_for_search_result(result, query)
             build_output("</table>")
         build_output_for_navigation(search_results)
     else:
@@ -3122,7 +3175,7 @@ def build_output_for_search_result(search_tuple, query):
             build_output("<tr><td colspan=\"2\" align=\"center\">")
             line_break_written = 1
         build_output("<a href=\"" + configuration.get_action_url() + \
-          "?page_mode=search&query=" + quote(get_cgi("query")) + \
+          "?page_mode=search&query=" + urllib.quote(get_cgi("query")) + \
           "&section=" + search_tuple[0].get_html_name() + \
           "&relative_filename=" + search_tuple[1].get_relative_filename() + \
           "&more_like_this=yes\" style=\"" + \
@@ -3654,13 +3707,6 @@ def print_output(filehandle):
     cPickle.dump(multitasking.get_thread_specific_storage()["output"], \
       filehandle)
 
-def quote(string):
-    """Quote a string for inclusion in a URL; urllib.quote() seems to let
-    spaces pass through unaltered."""
-    interim = urllib.quote(string)
-    interim = re.sub(" ", "%20", interim)
-    return interim
-
 def read_file(filename, prefix=DOCUMENT_ROOT):
     """Read the contents of a file and return it as a string."""
     if string.find(condense_path(filename), condense_path(prefix)) == 0:
@@ -3674,12 +3720,17 @@ def read_file(filename, prefix=DOCUMENT_ROOT):
 def repeat_maintenance_tasks(filename = "cache"):
     while 1:
         try:
+            cache.remove_old_data()
             if configuration.should_save_cache():
                 save_object(monolith, "cache")
-            cache.remove_old_data()
             time.sleep(configuration.get_delay_between_monolith_saves())
         finally:
             pass
+
+def reread_documents_and_save_cache():
+    for section in sequence(sections):
+        sections[section].get_documents(1)
+    save_object(monolith, "cache")
 
 def save_configuration():
     maximum_attempts = 10
@@ -3731,7 +3782,6 @@ def sequence(source):
         return source
     else:
         return [source]
-            
 
 def server_init():
     global cache
@@ -3796,6 +3846,16 @@ def should_save_section(current_section):
 def sort_by_attribute(data, attribute_name, in_place = 1):
     aux = [(getattr(data[i], attribute_name), i) for i in range(len(data))]
     return sort_helper(data, aux, in_place)
+
+def sort_by_descending_length(wordlist):
+    auxiliary = []
+    for word in wordlist:
+        auxiliary.append((word, -len(word)))
+    auxiliary = sort_by_item(auxiliary, 1)
+    result = []
+    for pair in auxiliary:
+        result.append(pair[0])
+    return result
 
 # From the Python Cookbook.
 def sort_by_item(data, item_index, in_place = 1):

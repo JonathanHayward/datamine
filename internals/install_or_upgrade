@@ -130,7 +130,7 @@ def install_or_upgrade():
     substitute(server_executable_path, "FULL_PYTHON_PATH", full_python_path)
     substitute(server_executable_path, "DOCUMENT_ROOT_PATH", \
       private_data_directory)
-    substitute(server_executable_path, "DOCUMENT_URL", document_url)
+    substitute(server_executable_path, "DOCUMENT_URL", document_url + "/")
     substitute(server_executable_path, "/cgi-bin/datamine", action_url)
     try:
         import threading
@@ -147,14 +147,15 @@ def install_or_upgrade():
     os.system("chmod 0755 " + cgi_executable_path)
     os.system("chown nobody " + server_executable_path)
     os.system("chmod 4755 " + server_executable_path)
-    substitute("doc/README", "<the private Data Mine data directory>", \
-      private_data_directory)
-    substitute("doc/README", "<the public Data Mine HTML directory>", \
-      html_root_directory)
-    os.system("mkdir -p " + documentation_path)
-    os.system("rm -rf " + documentation_path)
-    os.system("mkdir -p " + documentation_path)
-    os.system("cd doc; cp -rp * " + documentation_path)
+    if get_script_mode() == "install":
+        substitute("doc/README", "<the private Data Mine data directory>", \
+          private_data_directory)
+        substitute("doc/README", "<the public Data Mine HTML directory>", \
+          html_root_directory)
+        os.system("mkdir -p " + documentation_path)
+        os.system("rm -rf " + documentation_path)
+        os.system("mkdir -p " + documentation_path)
+        os.system("cd doc; cp -rp * " + documentation_path)
     if get_script_mode() == "install":
         output(\
 """
@@ -223,13 +224,14 @@ the Data Mine to work?  This should be something like
 
 Data Mine executable path""")
     server_executable_path = get_value(server_executable_path)
-    output(\
+    if get_script_mode() == "install":
+        output(\
 """
 What is the path on the system for the Data Mine documentation? This should
 be something like "/usr/doc/datamine/" or "~/doc/datamine".
 
 Documentation path""")
-    documentation_path = get_value(documentation_path)
+        documentation_path = get_value(documentation_path)
     output(\
 """
 What is the URL for the Data Mine documents (images, etc.)? This should be
@@ -244,20 +246,20 @@ What is the full path to python? This should be something like
 
 Full python path""")
     full_python_path = get_value(full_python_path)
-    output(\
+    if get_script_mode() == "install":
+        output(\
 """
 What is the full system path for material to be so as to be available at the
 URL you specified for the document URL? This should be something like
 "/var/www/html/datamine/" or "~/public_html/datamine/".  
 """)
-    if get_script_mode() == "install":
         output("""
 ** Warning: If you have anything at this location before the Data Mine is
 ** installed, it will be deleted.
 """)
-    output("""
+        output("""
 HTML root directory""")
-    html_root_directory = get_value(html_root_directory)
+        html_root_directory = get_value(html_root_directory)
     output(\
 """
 What is the directory that private data should be stored in? This should be
@@ -271,16 +273,17 @@ something like "/usr/share/datamine/" or "~/datamine/".
     output("""
 Private data directory""")
     private_data_directory = get_value(private_data_directory)
-    if get_script_mode() == "upgrade":
+    #if get_script_mode() == "upgrade":
+        #output(\
+#"""
+#Have you customized your Data Mine script after installation and any
+#upgrades (yes/no)""")
+        #has_installation_been_customized =\
+          #get_value(has_installation_been_customized)
+        #if is_true(has_installation_been_customized):
+            #pass
+    if get_script_mode() == "install":
         output(\
-"""
-Have you customized your Data Mine script after installation and any
-upgrades (yes/no)""")
-        has_installation_been_customized =\
-          get_value(has_installation_been_customized)
-        if is_true(has_installation_been_customized):
-            pass
-    output(\
 """
 You have selected the following options:
 
@@ -291,6 +294,17 @@ You have selected the following options:
     Document URL: """ + document_url + """
     Full Python path: """ + full_python_path + """
     HTML root directory: """ + html_root_directory + """
+    Private data directory: """ + private_data_directory)
+    else:
+        output(\
+"""
+You have selected the following options:
+
+    Data Mine URL: """ + action_url + """
+    Data Mine CGI executable path: """ + cgi_executable_path + """
+    Data Mine server executable path: """ + server_executable_path + """
+    Document URL: """ + document_url + """
+    Full Python path: """ + full_python_path + """
     Private data directory: """ + private_data_directory)
     if get_script_mode() == "upgrade":
         output(\
