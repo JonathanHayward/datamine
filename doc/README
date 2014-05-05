@@ -1,4 +1,4 @@
-README for the Magic Notebook 1.2.1
+README for the Data Mine
 
 LEGAL
 
@@ -11,9 +11,10 @@ LEGAL
 
         This software is copyright 2003 by Jonathan Hayward, and licensed
 		and licensed to you under the your choice of the original Artistic
-        License, which should be present in the file doc/artistic.txt, and the
+        License, which should be present in the file doc/artistic.txt, the
         General Public License version 2.0, which should be present in the
-        file doc/gpl.txt.
+        file doc/gpl.txt, and the Massachusetts Institute of Technology
+        License, which should be present in the file doc/mit.txt.
 
     Warrantee
 
@@ -100,5 +101,5 @@ NOTES
 
         The author can be contacted at jonathan.hayward@pobox.com, and
         maintains a website at http://JonathansCorner.com. The current version
-        of Catch the Furball may be obtained from
+        of the Data Mine may be obtained from
         http://JonathansCorner.com/etc/datamine/.

@@ -12,7 +12,7 @@ def get_page_from_oracle():
         sock.connect(("127.0.0.1", 1374))
         sockIn = sock.makefile("rb")
         sockOut = sock.makefile("wb")
-        cPickle.dump((os.environ, cgi.FieldStorage()), sockOut)
+        cPickle.dump(cgi.FieldStorage(), sockOut)
         sockOut.flush()
         result = cPickle.load(sockIn)
         sock.close()
